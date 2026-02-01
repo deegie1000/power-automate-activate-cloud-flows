@@ -30,13 +30,15 @@ public class PowerPlatformService : IDisposable
         AnsiConsole.MarkupLine($"[dim]Detected cloud type: {cloudType}[/]");
         AnsiConsole.MarkupLine($"[dim]Connection URL: {_environmentUrl}[/]");
 
-        // Build connection string with LoginPrompt=Always to force browser auth
-        var connectionString = $"AuthType=OAuth;" +
-                              $"Url={_environmentUrl};" +
-                              $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
-                              $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
-                              $"LoginPrompt=Always;" +
-                              $"RequireNewInstance=True";
+        // Build connection string matching the working pattern from dataverse-unmanaged-layer-fixer
+        var connectionString = $@"
+            AuthType=OAuth;
+            Url={_environmentUrl};
+            LoginPrompt=Auto;
+            RequireNewInstance=True;
+            RedirectUri=http://localhost;
+            AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;
+            TokenCacheStorePath=./tokencache.dat";
 
         AnsiConsole.MarkupLine("[dim]Creating ServiceClient...[/]");
 
