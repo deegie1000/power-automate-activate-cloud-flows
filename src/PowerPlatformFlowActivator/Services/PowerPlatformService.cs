@@ -25,20 +25,63 @@ public class PowerPlatformService : IDisposable
     {
         _environmentUrl = environmentUrl.TrimEnd('/');
 
-        // Use ServiceClient constructor with explicit parameters for interactive OAuth
-        // This approach is more reliable than connection strings
-        _serviceClient = new ServiceClient(
-            instanceUrl: new Uri(_environmentUrl),
-            clientId: "51f81489-12ee-4a9e-aaae-a2591f45987d",
-            redirectUri: new Uri("app://58145B91-0C36-4500-8554-080854F2AC97"),
-            useUniqueInstance: true,
-            logger: null);
+        // Detect cloud type based on URL and build appropriate connection string
+        var cloudType = DetectCloudType(_environmentUrl);
+        var connectionString = BuildConnectionString(_environmentUrl, cloudType);
+
+        _serviceClient = new ServiceClient(connectionString);
 
         if (!_serviceClient.IsReady)
         {
             throw new InvalidOperationException(
                 $"Failed to connect to Dataverse: {_serviceClient.LastError}");
         }
+    }
+
+    /// <summary>
+    /// Detects the cloud type (Commercial, GCC, GCC High, DOD) based on the environment URL.
+    /// </summary>
+    private static string DetectCloudType(string url)
+    {
+        var lowerUrl = url.ToLowerInvariant();
+
+        // GCC (Government Community Cloud) - uses crm9.dynamics.com
+        if (lowerUrl.Contains(".crm9.dynamics.com"))
+            return "GCC";
+
+        // GCC High - uses crm.dynamics.us
+        if (lowerUrl.Contains(".crm.dynamics.us"))
+            return "GCCHigh";
+
+        // DOD - uses crm.microsoftdynamics.us
+        if (lowerUrl.Contains(".crm.microsoftdynamics.us"))
+            return "DOD";
+
+        // Commercial cloud (default)
+        return "Commercial";
+    }
+
+    /// <summary>
+    /// Builds the connection string with appropriate settings for the cloud type.
+    /// </summary>
+    private static string BuildConnectionString(string url, string cloudType)
+    {
+        // Base connection parameters
+        var baseParams = $"AuthType=OAuth;" +
+                        $"Url={url};" +
+                        $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
+                        $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
+                        $"LoginPrompt=Auto;" +
+                        $"RequireNewInstance=True";
+
+        // Add cloud-specific authority
+        return cloudType switch
+        {
+            "GCC" => baseParams + ";Authority=https://login.microsoftonline.com",
+            "GCCHigh" => baseParams + ";Authority=https://login.microsoftonline.us",
+            "DOD" => baseParams + ";Authority=https://login.microsoftonline.us",
+            _ => baseParams // Commercial uses default authority
+        };
     }
 
     /// <summary>
