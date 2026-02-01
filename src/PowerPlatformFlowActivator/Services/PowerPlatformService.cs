@@ -66,18 +66,20 @@ public class PowerPlatformService : IDisposable
     /// </summary>
     private static string BuildConnectionString(string url, string cloudType)
     {
-        // Base connection parameters
+        // Base connection parameters - using integrated security for simplicity
         var baseParams = $"AuthType=OAuth;" +
                         $"Url={url};" +
                         $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
                         $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
                         $"LoginPrompt=Auto;" +
-                        $"RequireNewInstance=True";
+                        $"RequireNewInstance=True;" +
+                        $"TokenCacheStorePath={Path.Combine(Path.GetTempPath(), "PowerPlatformFlowActivator_TokenCache")}";
 
-        // Add cloud-specific authority
+        // Add cloud-specific settings
         return cloudType switch
         {
-            "GCC" => baseParams + ";Authority=https://login.microsoftonline.com",
+            // GCC uses commercial AAD but government Dataverse endpoints
+            "GCC" => baseParams + ";Geo=GCC",
             "GCCHigh" => baseParams + ";Authority=https://login.microsoftonline.us",
             "DOD" => baseParams + ";Authority=https://login.microsoftonline.us",
             _ => baseParams // Commercial uses default authority
