@@ -25,19 +25,26 @@ public class PowerPlatformService : IDisposable
     {
         _environmentUrl = environmentUrl.TrimEnd('/');
 
-        // Detect cloud type based on URL and build appropriate connection string
+        // Detect cloud type based on URL
         var cloudType = DetectCloudType(_environmentUrl);
-
         AnsiConsole.MarkupLine($"[dim]Detected cloud type: {cloudType}[/]");
-
-        var connectionString = BuildConnectionString(_environmentUrl, cloudType);
+        AnsiConsole.MarkupLine($"[dim]Connection URL: {_environmentUrl}[/]");
 
         try
         {
-            _serviceClient = new ServiceClient(connectionString);
+            // Try the simplest approach first - just the URI
+            // The SDK should auto-detect cloud type and prompt for login
+            AnsiConsole.MarkupLine("[dim]Creating ServiceClient...[/]");
+
+            _serviceClient = new ServiceClient(
+                new Uri(_environmentUrl),
+                useUniqueInstance: true);
+
+            AnsiConsole.MarkupLine("[dim]ServiceClient created, checking if ready...[/]");
         }
         catch (Exception ex)
         {
+            AnsiConsole.MarkupLine($"[dim]ServiceClient exception: {ex.GetType().Name}[/]");
             throw new InvalidOperationException(
                 $"Failed to create ServiceClient: {ex.Message}", ex);
         }
@@ -45,6 +52,7 @@ public class PowerPlatformService : IDisposable
         if (!_serviceClient.IsReady)
         {
             var errorDetails = _serviceClient.LastError ?? "No error details available";
+            AnsiConsole.MarkupLine($"[dim]ServiceClient not ready. LastError: {errorDetails}[/]");
             throw new InvalidOperationException(
                 $"ServiceClient not ready. Error: {errorDetails}");
         }
