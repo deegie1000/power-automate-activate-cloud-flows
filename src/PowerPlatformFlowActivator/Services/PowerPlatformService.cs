@@ -26,14 +26,12 @@ public class PowerPlatformService : IDisposable
     {
         _environmentUrl = environmentUrl.TrimEnd('/');
 
-        // Create service client using the access token
-        // The connection string uses the external access token for authentication
-        var connectionString = $"AuthType=OAuth;" +
-                              $"Url={_environmentUrl};" +
-                              $"AccessToken={accessToken};" +
-                              $"RequireNewInstance=True";
-
-        _serviceClient = new ServiceClient(connectionString);
+        // Create service client using a token provider function
+        // This is the recommended approach for using pre-acquired access tokens
+        _serviceClient = new ServiceClient(
+            instanceUrl: new Uri(_environmentUrl),
+            tokenProviderFunction: async (url) => accessToken,
+            useUniqueInstance: true);
 
         if (!_serviceClient.IsReady)
         {
