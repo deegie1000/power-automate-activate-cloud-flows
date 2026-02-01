@@ -27,14 +27,26 @@ public class PowerPlatformService : IDisposable
 
         // Detect cloud type based on URL and build appropriate connection string
         var cloudType = DetectCloudType(_environmentUrl);
+
+        AnsiConsole.MarkupLine($"[dim]Detected cloud type: {cloudType}[/]");
+
         var connectionString = BuildConnectionString(_environmentUrl, cloudType);
 
-        _serviceClient = new ServiceClient(connectionString);
+        try
+        {
+            _serviceClient = new ServiceClient(connectionString);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create ServiceClient: {ex.Message}", ex);
+        }
 
         if (!_serviceClient.IsReady)
         {
+            var errorDetails = _serviceClient.LastError ?? "No error details available";
             throw new InvalidOperationException(
-                $"Failed to connect to Dataverse: {_serviceClient.LastError}");
+                $"ServiceClient not ready. Error: {errorDetails}");
         }
     }
 
@@ -66,24 +78,24 @@ public class PowerPlatformService : IDisposable
     /// </summary>
     private static string BuildConnectionString(string url, string cloudType)
     {
-        // Base connection parameters - using integrated security for simplicity
-        var baseParams = $"AuthType=OAuth;" +
-                        $"Url={url};" +
-                        $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
-                        $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
-                        $"LoginPrompt=Auto;" +
-                        $"RequireNewInstance=True;" +
-                        $"TokenCacheStorePath={Path.Combine(Path.GetTempPath(), "PowerPlatformFlowActivator_TokenCache")}";
+        // Simplified connection string - let ServiceClient auto-detect cloud settings from URL
+        // For GCC (crm9), the SDK should automatically detect the correct endpoints
+        var connectionString = $"AuthType=OAuth;" +
+                              $"Url={url};" +
+                              $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
+                              $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
+                              $"LoginPrompt=Auto;" +
+                              $"RequireNewInstance=True";
 
-        // Add cloud-specific settings
-        return cloudType switch
+        // For GCC High and DOD, we need to explicitly set the authority
+        if (cloudType == "GCCHigh" || cloudType == "DOD")
         {
-            // GCC uses commercial AAD but government Dataverse endpoints
-            "GCC" => baseParams + ";Geo=GCC",
-            "GCCHigh" => baseParams + ";Authority=https://login.microsoftonline.us",
-            "DOD" => baseParams + ";Authority=https://login.microsoftonline.us",
-            _ => baseParams // Commercial uses default authority
-        };
+            connectionString += ";Authority=https://login.microsoftonline.us";
+        }
+
+        AnsiConsole.MarkupLine($"[dim]Connection URL: {url}[/]");
+
+        return connectionString;
     }
 
     /// <summary>
