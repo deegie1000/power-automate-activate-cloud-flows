@@ -25,16 +25,14 @@ public class PowerPlatformService : IDisposable
     {
         _environmentUrl = environmentUrl.TrimEnd('/');
 
-        // Use ServiceClient's built-in interactive OAuth authentication
-        // This is more reliable than passing pre-acquired tokens
-        var connectionString = $"AuthType=OAuth;" +
-                              $"Url={_environmentUrl};" +
-                              $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
-                              $"RedirectUri=http://localhost;" +
-                              $"LoginPrompt=Auto;" +
-                              $"RequireNewInstance=True";
-
-        _serviceClient = new ServiceClient(connectionString);
+        // Use ServiceClient constructor with explicit parameters for interactive OAuth
+        // This approach is more reliable than connection strings
+        _serviceClient = new ServiceClient(
+            instanceUrl: new Uri(_environmentUrl),
+            clientId: "51f81489-12ee-4a9e-aaae-a2591f45987d",
+            redirectUri: new Uri("app://58145B91-0C36-4500-8554-080854F2AC97"),
+            useUniqueInstance: true,
+            logger: null);
 
         if (!_serviceClient.IsReady)
         {
