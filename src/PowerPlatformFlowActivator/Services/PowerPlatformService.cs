@@ -30,32 +30,39 @@ public class PowerPlatformService : IDisposable
         AnsiConsole.MarkupLine($"[dim]Detected cloud type: {cloudType}[/]");
         AnsiConsole.MarkupLine($"[dim]Connection URL: {_environmentUrl}[/]");
 
+        // Build connection string with LoginPrompt=Always to force browser auth
+        var connectionString = $"AuthType=OAuth;" +
+                              $"Url={_environmentUrl};" +
+                              $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
+                              $"RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;" +
+                              $"LoginPrompt=Always;" +
+                              $"RequireNewInstance=True";
+
+        AnsiConsole.MarkupLine("[dim]Creating ServiceClient...[/]");
+
         try
         {
-            // Try the simplest approach first - just the URI
-            // The SDK should auto-detect cloud type and prompt for login
-            AnsiConsole.MarkupLine("[dim]Creating ServiceClient...[/]");
-
-            _serviceClient = new ServiceClient(
-                new Uri(_environmentUrl),
-                useUniqueInstance: true);
-
-            AnsiConsole.MarkupLine("[dim]ServiceClient created, checking if ready...[/]");
+            _serviceClient = new ServiceClient(connectionString);
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[dim]ServiceClient exception: {ex.GetType().Name}[/]");
-            throw new InvalidOperationException(
-                $"Failed to create ServiceClient: {ex.Message}", ex);
+            AnsiConsole.MarkupLine($"[dim]Exception: {ex.GetType().FullName}[/]");
+            AnsiConsole.MarkupLine($"[dim]Message: {ex.Message}[/]");
+            if (ex.InnerException != null)
+            {
+                AnsiConsole.MarkupLine($"[dim]Inner: {ex.InnerException.Message}[/]");
+            }
+            throw new InvalidOperationException($"Failed to create ServiceClient: {ex.Message}", ex);
         }
 
         if (!_serviceClient.IsReady)
         {
             var errorDetails = _serviceClient.LastError ?? "No error details available";
-            AnsiConsole.MarkupLine($"[dim]ServiceClient not ready. LastError: {errorDetails}[/]");
-            throw new InvalidOperationException(
-                $"ServiceClient not ready. Error: {errorDetails}");
+            AnsiConsole.MarkupLine($"[dim]Not ready. Error: {errorDetails}[/]");
+            throw new InvalidOperationException($"ServiceClient not ready: {errorDetails}");
         }
+
+        AnsiConsole.MarkupLine("[dim]ServiceClient ready![/]");
     }
 
     /// <summary>
