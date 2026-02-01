@@ -46,7 +46,7 @@ Your account must have the following permissions in the Power Platform environme
 
 3. The executable will be located at:
    ```
-   src/PowerPlatformFlowActivator/bin/Release/net8.0/PowerPlatformFlowActivator.exe
+   src/PowerPlatformFlowActivator/bin/Release/net8.0-windows/PowerPlatformFlowActivator.exe
    ```
 
 ### Option 2: Publish as Self-Contained Executable
