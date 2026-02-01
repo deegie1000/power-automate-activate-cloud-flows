@@ -68,7 +68,7 @@ public class Program
         AnsiConsole.Write(
             new FigletText("Flow Activator")
                 .LeftJustified()
-                .Color(Color.Blue));
+                .Color(Spectre.Console.Color.Blue));
 
         AnsiConsole.MarkupLine("[dim]Power Platform Cloud Flow Activation Tool v1.0.0[/]");
         AnsiConsole.MarkupLine("[dim]Activate draft cloud flows in your Power Platform solutions[/]");
@@ -377,7 +377,7 @@ public class Program
     {
         AnsiConsole.WriteLine();
 
-        var panel = new Panel(
+        var panel = new Spectre.Console.Panel(
             new Markup(
                 $"[green]Successfully activated:[/] {session.SuccessCount}\n" +
                 $"[red]Failed:[/] {session.FailureCount}\n" +
