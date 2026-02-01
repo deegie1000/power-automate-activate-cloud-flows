@@ -18,20 +18,23 @@ public class PowerPlatformService : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of the PowerPlatformService.
+    /// Initializes a new instance of the PowerPlatformService using interactive authentication.
     /// </summary>
     /// <param name="environmentUrl">The Power Platform environment URL.</param>
-    /// <param name="accessToken">The access token for authentication.</param>
-    public PowerPlatformService(string environmentUrl, string accessToken)
+    public PowerPlatformService(string environmentUrl)
     {
         _environmentUrl = environmentUrl.TrimEnd('/');
 
-        // Create service client using a token provider function
-        // This is the recommended approach for using pre-acquired access tokens
-        _serviceClient = new ServiceClient(
-            instanceUrl: new Uri(_environmentUrl),
-            tokenProviderFunction: async (url) => accessToken,
-            useUniqueInstance: true);
+        // Use ServiceClient's built-in interactive OAuth authentication
+        // This is more reliable than passing pre-acquired tokens
+        var connectionString = $"AuthType=OAuth;" +
+                              $"Url={_environmentUrl};" +
+                              $"AppId=51f81489-12ee-4a9e-aaae-a2591f45987d;" +
+                              $"RedirectUri=http://localhost;" +
+                              $"LoginPrompt=Auto;" +
+                              $"RequireNewInstance=True";
+
+        _serviceClient = new ServiceClient(connectionString);
 
         if (!_serviceClient.IsReady)
         {
@@ -39,6 +42,11 @@ public class PowerPlatformService : IDisposable
                 $"Failed to connect to Dataverse: {_serviceClient.LastError}");
         }
     }
+
+    /// <summary>
+    /// Gets the authenticated user's name if available.
+    /// </summary>
+    public string? AuthenticatedUser => _serviceClient.OAuthUserId;
 
     /// <summary>
     /// Retrieves the solution ID for a given solution unique name.

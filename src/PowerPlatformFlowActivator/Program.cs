@@ -101,29 +101,36 @@ public class Program
             AnsiConsole.MarkupLine($"[blue]Solution:[/] {solutionName}");
             AnsiConsole.WriteLine();
 
-            // Step 1: Authenticate
-            AnsiConsole.MarkupLine("[bold yellow]Step 1: Authentication[/]");
-            var authService = new AuthenticationService(environmentUrl);
-            string accessToken;
+            // Step 1: Connect to Dataverse (authentication happens automatically via browser)
+            AnsiConsole.MarkupLine("[bold yellow]Step 1: Connecting to Dataverse[/]");
+            AnsiConsole.MarkupLine("[yellow]A browser window will open for authentication...[/]");
+            AnsiConsole.MarkupLine("[dim]Please sign in with your Power Platform account.[/]");
 
+            PowerPlatformService powerPlatformService;
             try
             {
-                accessToken = await authService.AcquireTokenInteractiveAsync();
-                session.AuthenticatedUser = await authService.GetAuthenticatedUsernameAsync();
+                powerPlatformService = new PowerPlatformService(environmentUrl);
+                session.AuthenticatedUser = powerPlatformService.AuthenticatedUser;
+                AnsiConsole.MarkupLine("[green]Connected successfully![/]");
+                if (!string.IsNullOrEmpty(session.AuthenticatedUser))
+                {
+                    AnsiConsole.MarkupLine($"[dim]Signed in as: {session.AuthenticatedUser}[/]");
+                }
             }
-            catch (AuthenticationException ex)
+            catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]Authentication failed: {ex.Message}[/]");
+                AnsiConsole.MarkupLine($"[red]Failed to connect to Dataverse: {ex.Message}[/]");
                 return;
             }
 
             AnsiConsole.WriteLine();
 
-            // Step 2: Connect and query flows
+            // Step 2: Query flows
             AnsiConsole.MarkupLine("[bold yellow]Step 2: Querying Draft Cloud Flows[/]");
 
-            using var powerPlatformService = new PowerPlatformService(environmentUrl, accessToken);
-            List<CloudFlow> draftFlows;
+            using (powerPlatformService)
+            {
+                List<CloudFlow> draftFlows;
 
             try
             {
@@ -198,6 +205,7 @@ public class Program
                 var exportService = new ExcelExportService();
                 exportService.ExportWithSaveDialog(session);
             }
+            } // Close using block
         }
         catch (Exception ex)
         {
